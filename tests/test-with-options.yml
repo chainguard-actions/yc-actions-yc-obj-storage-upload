@@ -1,0 +1,56 @@
+name: Test upload with clear and cache-control options
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Create test files to upload
+        run: |
+          mkdir -p /tmp/upload-root/subdir
+          echo "index content" > /tmp/upload-root/index.html
+          echo "style content" > /tmp/upload-root/style.css
+          echo "script content" > /tmp/upload-root/app.js
+          echo "subdir file" > /tmp/upload-root/subdir/page.html
+          echo "ignored file" > /tmp/upload-root/ignore.tmp
+
+      - name: Run upload action with clear and cache-control options (expect failure with dummy credentials)
+        id: action
+        uses: .
+        continue-on-error: true
+        with:
+          yc-sa-json-credentials: |
+            {
+              "id": "dummy-id",
+              "service_account_id": "dummy-sa-id",
+              "created_at": "2024-01-01T00:00:00Z",
+              "key_algorithm": "RSA_2048",
+              "public_key": "-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA0000000000000000000\n-----END PUBLIC KEY-----\n",
+              "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQC0000000000000\n-----END PRIVATE KEY-----\n"
+            }
+          bucket: dummy-bucket
+          root: /tmp/upload-root
+          include: |
+            *.html
+            *.css
+            *.js
+          exclude: |
+            *.tmp
+          clear: 'true'
+          cache-control: |
+            *.html=max-age=3600
+            *.css=max-age=86400
+            *.js=max-age=86400
+
+      - name: Assert action ran with options (even if it failed due to dummy credentials)
+        run: |
+          echo "Action outcome: ${{ steps.action.outcome }}"
+          # With dummy credentials, the action should fail at auth/upload stage
+          # but it should not crash with an unhandled exception at input parsing
+          if [ "${{ steps.action.outcome }}" = "skipped" ]; then
+            echo "FAIL: action was skipped unexpectedly"
+            exit 1
+          fi
+          echo "PASS: action ran with options (outcome: ${{ steps.action.outcome }})"

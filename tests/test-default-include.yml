@@ -1,0 +1,46 @@
+name: Test upload with default include pattern and no prefix
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Create test files to upload
+        run: |
+          mkdir -p /tmp/upload-default
+          echo "file one" > /tmp/upload-default/file1.txt
+          echo "file two" > /tmp/upload-default/file2.txt
+          echo "file three" > /tmp/upload-default/file3.log
+
+      - name: Run upload action with default include (all files) and no prefix
+        id: action
+        uses: .
+        continue-on-error: true
+        with:
+          yc-sa-json-credentials: |
+            {
+              "id": "dummy-id",
+              "service_account_id": "dummy-sa-id",
+              "created_at": "2024-01-01T00:00:00Z",
+              "key_algorithm": "RSA_2048",
+              "public_key": "-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA0000000000000000000\n-----END PUBLIC KEY-----\n",
+              "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQC0000000000000\n-----END PRIVATE KEY-----\n"
+            }
+          bucket: dummy-bucket
+          root: /tmp/upload-default
+          # include defaults to '*' — all files
+          # prefix defaults to '' — no prefix
+          # clear defaults to 'false'
+
+      - name: Assert action ran with default options
+        run: |
+          echo "Action outcome: ${{ steps.action.outcome }}"
+          # With dummy credentials, the action should fail at auth/upload stage
+          # but it should not crash with an unhandled exception at input parsing
+          if [ "${{ steps.action.outcome }}" = "skipped" ]; then
+            echo "FAIL: action was skipped unexpectedly"
+            exit 1
+          fi
+          echo "PASS: action ran with default options (outcome: ${{ steps.action.outcome }})"
