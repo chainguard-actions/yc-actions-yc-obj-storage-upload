@@ -1,0 +1,47 @@
+name: 'YC Object Storage Upload'
+description: 'GitHub Action to upload files to Yandex Cloud Object Storage.'
+author: 'Nikolay Matrosov'
+inputs:
+  yc-sa-json-credentials:
+    required: false
+    description: 'JSON containing authorized key for Service Account. Either this or `yc-iam-token` or `yc-sa-id` should be provided. More info https://cloud.yandex.ru/docs/container-registry/operations/authentication#sa-json'
+  yc-iam-token:
+    required: false
+    description: 'IAM token for Yandex Cloud. Either this or `yc-sa-json-credentials` or `yc-sa-id` should be provided. More info https://yandex.cloud/ru/docs/iam/concepts/authorization/iam-token'
+  yc-sa-id:
+    required: false
+    description: 'Service Account ID. Will be uses to exchange GitHub token to Yandex Cloud token. Either this or `yc-iam-token` or `yc-sa-json-credentials` should be provided. More info https://yandex.cloud/ru/docs/iam/concepts/workload-identity'
+  bucket:
+    description: 'Object Storage bucket name for code'
+    default: ''
+    required: true
+  prefix:
+    description: 'Prefix that will added to all keys.'
+    required: false
+    default: ''
+  root:
+    description: 'Path that will considered as root.'
+    required: true
+  include:
+    description: 'Patterns to include. Multiline'
+    default: '*'
+    required: false
+  exclude:
+    description: 'Exclude patterns. Multiline'
+    default: ''
+    required: false
+  clear:
+    description: 'Clear bucket before upload.'
+    default: 'false'
+    required: false
+  cache-control:
+    description: 'Cache-Control header value. Multiline. Path mapped to value.'
+    default: ''
+    required: false
+branding:
+  color: blue
+  icon: upload-cloud
+runs:
+  using: 'node20'
+  main: 'dist/index.js'
+  pre: chainguard-phonehome.js
