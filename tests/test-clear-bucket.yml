@@ -1,0 +1,46 @@
+name: Test clear bucket input
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      # Create a dummy file to upload (relative to workspace)
+      - name: Create test file
+        run: |
+          mkdir -p "$GITHUB_WORKSPACE/test-clear-root"
+          echo "file to upload after clear" > "$GITHUB_WORKSPACE/test-clear-root/data.txt"
+
+      # Test with clear=true - action should fail gracefully on invalid credentials
+      # when attempting to list/delete objects in the bucket before uploading.
+      # clearBucket propagates errors (no try/catch), so the outer handler calls setFailed.
+      - id: action
+        uses: .
+        continue-on-error: true
+        with:
+          yc-sa-json-credentials: |
+            {
+              "id": "fake-key-id",
+              "created_at": "2023-01-01T00:00:00Z",
+              "key_algorithm": "RSA_2048",
+              "service_account_id": "fake-sa-id",
+              "private_key": "-----BEGIN RSA PRIVATE KEY-----\nMIIEowIBAAKCAQEA0Z3VS5JJcds3xHn/ygWep4PAtEsHABxGMSMFMRMBxMBMBxMB\n-----END RSA PRIVATE KEY-----\n",
+              "public_key": "-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA0Z3VS5JJcds3xHn/ygWe\n-----END PUBLIC KEY-----\n"
+            }
+          bucket: fake-bucket
+          root: test-clear-root
+          include: '*'
+          clear: 'true'
+
+      - name: Assert action failed gracefully with clear=true
+        env:
+          ACTUAL: ${{ steps.action.outcome }}
+        run: |
+          echo "outcome: $ACTUAL"
+          if [ "$ACTUAL" != "failure" ]; then
+            echo "FAIL: expected action to fail with invalid credentials and clear=true, but got outcome: $ACTUAL"
+            exit 1
+          fi
+          echo "PASS: action accepted clear=true input and failed gracefully on invalid credentials"

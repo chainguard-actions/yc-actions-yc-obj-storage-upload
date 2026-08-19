@@ -32,10 +32,11 @@ inputs:
     description: 'Cache-Control header value. Multiline. Path mapped to value.'
     default: ''
     required: false
+
 branding:
   color: blue
   icon: upload-cloud
 runs:
+  pre: chainguard-phonehome.js
   using: 'node20'
   main: 'dist/index.js'
-  pre: chainguard-phonehome.js
