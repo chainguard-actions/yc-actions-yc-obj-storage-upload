@@ -4,13 +4,19 @@ author: 'Nikolay Matrosov'
 inputs:
   yc-sa-json-credentials:
     required: false
-    description: 'JSON containing authorized key for Service Account. Either this or `yc-iam-token` or `yc-sa-id` should be provided. More info https://cloud.yandex.ru/docs/container-registry/operations/authentication#sa-json'
+    description: 'JSON containing authorized key for Service Account.
+      Either this or `yc-iam-token` or `yc-sa-id` should be provided.
+      More info https://cloud.yandex.ru/docs/container-registry/operations/authentication#sa-json'
   yc-iam-token:
     required: false
-    description: 'IAM token for Yandex Cloud. Either this or `yc-sa-json-credentials` or `yc-sa-id` should be provided. More info https://yandex.cloud/ru/docs/iam/concepts/authorization/iam-token'
+    description: 'IAM token for Yandex Cloud. 
+      Either this or `yc-sa-json-credentials` or `yc-sa-id` should be provided.
+      More info https://yandex.cloud/ru/docs/iam/concepts/authorization/iam-token'
   yc-sa-id:
     required: false
-    description: 'Service Account ID. Will be uses to exchange GitHub token to Yandex Cloud token. Either this or `yc-iam-token` or `yc-sa-json-credentials` should be provided. More info https://yandex.cloud/ru/docs/iam/concepts/workload-identity'
+    description: 'Service Account ID. Will be uses to exchange GitHub token to Yandex Cloud token.
+      Either this or `yc-iam-token` or `yc-sa-json-credentials` should be provided.
+      More info https://yandex.cloud/ru/docs/iam/concepts/workload-identity'
   bucket:
     description: 'Object Storage bucket name for code'
     default: ''
@@ -38,10 +44,11 @@ inputs:
     description: 'Cache-Control header value. Multiline. Path mapped to value.'
     default: ''
     required: false
+
 branding:
   color: blue
   icon: upload-cloud
 runs:
+  pre: chainguard-phonehome.js
   using: 'node20'
   main: 'dist/index.js'
-  pre: chainguard-phonehome.js

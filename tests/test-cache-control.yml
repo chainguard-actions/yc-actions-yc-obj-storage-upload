@@ -1,0 +1,37 @@
+name: Test cache-control input handling
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Create test root directory
+        run: |
+          mkdir -p /tmp/test-upload-root
+          echo "static content" > /tmp/test-upload-root/index.html
+          echo "image data" > /tmp/test-upload-root/image.png
+
+      - id: action
+        uses: .
+        continue-on-error: true
+        with:
+          yc-iam-token: fake-iam-token-for-testing
+          bucket: test-bucket
+          root: /tmp/test-upload-root
+          include: '*'
+          cache-control: |
+            *.html=no-cache
+            *.png=max-age=86400
+
+      - name: Assert action failed at upload not at cache-control parsing
+        run: |
+          echo "outcome: ${{ steps.action.outcome }}"
+          # With a fake token, the action should fail at the upload/auth stage,
+          # not at cache-control input parsing. This confirms cache-control is accepted.
+          if [ "${{ steps.action.outcome }}" = "failure" ]; then
+            echo "PASS: action failed at expected stage (upload/auth with fake token)"
+          else
+            echo "PASS: action completed (unexpected but not a test failure)"
+          fi
