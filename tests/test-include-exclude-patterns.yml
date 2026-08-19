@@ -1,4 +1,4 @@
-name: Test basic upload with fake credentials
+name: Test include and exclude patterns
 on:
   workflow_dispatch:
 jobs:
@@ -7,14 +7,17 @@ jobs:
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
-      # Create some files to upload
+      # Create test files with various extensions
       - name: Create test files
         run: |
-          mkdir -p /tmp/upload-root
-          echo "hello world" > /tmp/upload-root/hello.txt
-          echo "test content" > /tmp/upload-root/test.html
+          mkdir -p /tmp/pattern-root/subdir
+          echo "html content" > /tmp/pattern-root/index.html
+          echo "css content" > /tmp/pattern-root/style.css
+          echo "js content" > /tmp/pattern-root/app.js
+          echo "txt content" > /tmp/pattern-root/readme.txt
+          echo "nested html" > /tmp/pattern-root/subdir/page.html
 
-      - name: Run upload action with fake credentials (expect failure)
+      - name: Run upload action with include/exclude patterns and fake credentials
         id: action
         uses: .
         continue-on-error: true
@@ -29,15 +32,17 @@ jobs:
               "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQC0000000000\n-----END PRIVATE KEY-----\n"
             }
           bucket: fake-test-bucket
-          root: /tmp/upload-root
-          include: '*'
+          root: /tmp/pattern-root
+          include: |
+            *.html
+            *.css
+          exclude: |
+            *.txt
 
       - name: Assert action ran (even if it failed due to fake credentials)
         run: |
           echo "outcome: ${{ steps.action.outcome }}"
-          # The action should either succeed or fail gracefully (not crash the runner)
-          # With fake credentials, it will fail when trying to get IAM token or upload
-          # We just verify the step completed (success or failure) without a runner crash
+          # The action should complete (success or failure) without a runner crash
           if [ "${{ steps.action.outcome }}" = "skipped" ]; then
             echo "FAIL: action was skipped unexpectedly"
             exit 1
