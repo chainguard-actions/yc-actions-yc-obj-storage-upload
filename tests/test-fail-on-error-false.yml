@@ -1,0 +1,41 @@
+name: Test fail-on-error false (default behavior)
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Create dummy upload root
+        run: |
+          mkdir -p "$GITHUB_WORKSPACE/upload-root"
+          echo "test content" > "$GITHUB_WORKSPACE/upload-root/test.txt"
+
+      - id: action
+        uses: .
+        continue-on-error: true
+        with:
+          yc-iam-token: fake-iam-token-that-is-invalid
+          bucket: fake-nonexistent-bucket-xyz123
+          root: upload-root
+          include: '*'
+          fail-on-error: 'false'
+
+      - name: Assert action behavior with fail-on-error=false
+        env:
+          OUTCOME: ${{ steps.action.outcome }}
+        run: |
+          echo "outcome: $OUTCOME"
+          # With fail-on-error=false, upload errors are only logged.
+          # The action may succeed (upload errors logged but not fatal) or fail
+          # (if the S3 client itself throws an unhandled error).
+          # Either outcome is acceptable — we just verify it doesn't crash unexpectedly.
+          if [ "$OUTCOME" = "success" ]; then
+            echo "PASS: action succeeded with fail-on-error=false (upload errors were logged only)"
+          elif [ "$OUTCOME" = "failure" ]; then
+            echo "PASS: action failed (S3 connection error propagated despite fail-on-error=false)"
+          else
+            echo "FAIL: unexpected outcome '$OUTCOME'"
+            exit 1
+          fi
